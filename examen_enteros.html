@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Examen de Matematica</title>
+    <style>
+        body { font-family: sans-serif; background: #2a5298; color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .box { background: white; padding: 30px; border-radius: 15px; max-width: 600px; width: 100%; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        input { width: 80%; padding: 10px; margin-bottom: 20px; font-size: 16px; border: 2px solid #ddd; border-radius: 5px; text-align: center; }
+        .card { background: #f9f9f9; border: 1px solid #ddd; padding: 20px; border-radius: 8px; text-align: left; margin-bottom: 20px; }
+        .btn { display: block; width: 100%; background: #fff; border: 2px solid #ddd; padding: 12px; margin: 8px 0; border-radius: 5px; cursor: pointer; text-align: left; font-size: 16px; }
+        .btn:hover { background: #edf2f7; }
+        .correct { background: #2ecc71 !important; color: white; font-weight: bold; }
+        .incorrect { background: #e74c3c !important; color: white; }
+        .feedback { margin-top: 15px; padding: 10px; border-radius: 5px; display: none; font-size: 14px; }
+        .nav-btn { background: #1e3c72; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; display: none; font-size: 16px; }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h2>🎯 Reto Matemático: Números Enteros</h2>
+    <input type="text" id="nombre" placeholder="Escribe tu Nombre y Apellido...">
+    
+    <div class="card">
+        <div id="enunciado" style="font-weight: bold; font-size: 18px; margin-bottom: 15px;"></div>
+        <div id="opciones"></div>
+        <div id="explicacion" class="feedback"></div>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>Pregunta: <span id="num-p">1</span> de 10</div>
+        <div>Puntos: <span id="puntos">0</span> / 20</div>
+        <button id="btn-sig" class="nav-btn" onclick="siguiente()">Siguiente ➡️</button>
+        <button id="btn-fin" class="nav-btn" onclick="finalizar()">Enviar Reporte 📩</button>
+    </div>
+</div>
+
+<script>
+    const preguntas = [
+        { q: "1. En Puno la temperatura fue de -4°C. Si al mediodía subió 9°C, ¿cuál es la temperatura actual?", o: ["-13°C", "+5°C", "-5°C", "+13°C"], c: 1, e: "¡Correcto! -4 + 9 = +5°C. Signos diferentes se restan y queda el signo del mayor." },
+        { q: "2. Un buzo está a -18 metros. Si decide bajar 7 metros más, ¿en qué posición se encuentra?", o: ["-11 metros", "+25 metros", "-25 metros", "-11 metros"], c: 2, e: "¡Muy bien! -18 - 7 = -25 metros. Signos iguales se suman y se mantiene el signo." },
+        { q: "3. ¿Cuál de las siguientes relaciones es CORRECTA?", o: ["-10 > -2", "-5 < -8", "-15 < 0", "0 < -3"], c: 2, e: "¡Excelente! Cualquier número negativo siempre es menor que cero." },
+        { q: "4. Resuelve la siguiente operación: (-15) + (-12)", o: ["-27", "+27", "-3", "+3"], c: 0, e: "¡Correcto! Al sumar dos negativos el resultado sigue siendo negativo (-27)." },
+        { q: "5. Efectúa la siguiente sustracción: (+8) - (-6)", o: ["+2", "-2", "+14", "-14"], c: 2, e: "¡Bien hecho! Menos por menos es más, así que se convierte en 8 + 6 = +14." },
+        { q: "6. Determina el resultado de: (-6) × (+4)", o: ["+24", "-24", "-2", "+10"], c: 1, e: "¡Así es! Menos por más da menos en la multiplicación. 6 x 4 = 24, resultado -24." },
+        { q: "7. Calcula el valor de la división: (-45) ÷ (-9)", o: ["-5", "+5", "+6", "-36"], c: 1, e: "¡Excelente! Menos entre menos da más. 45 entre 9 es +5." },
+        { q: "8. Encuentra el opuesto de la suma de -7 y +3.", o: ["-4", "+4", "-10", "+10"], c: 1, e: "¡Correcto! La suma de -7 + 3 es -4, y su opuesto es +4." },
+        { q: "9. Resuelve la operación combinada: 20 - 4 × (-3)", o: ["-48", "+8", "+32", "-32"], c: 2, e: "¡Magnífico! Primero la multiplicación: -4 x -3 = +12. Luego 20 + 12 = 32." },
+        { q: "10. Mateo tiene una deuda de -S/. 120. Si deposita S/. 200, ¿cuál es su nuevo saldo?", o: ["+S/. 320", "-S/. 80", "+S/. 80", "-S/. 320"], c: 2, e: "¡Perfecto! Pagó la deuda y le quedaron S/. 80 a favor. -120 + 200 = +80." }
+    ];
+
+    let index = 0, nota = 0, historial = [];
+
+    function mostrar() {
+        const p = preguntas[index];
+        document.getElementById("num-p").innerText = index + 1;
+        document.getElementById("enunciado").innerText = p.q;
+        document.getElementById("explicacion").style.display = "none";
+        document.getElementById("btn-sig").style.display = "none";
+        document.getElementById("btn-fin").style.display = "none";
+        
+        const boxOpciones = document.getElementById("opciones");
+        boxOpciones.innerHTML = "";
+        
+        p.o.forEach((op, i) => {
+            const b = document.createElement("button");
+            b.innerText = op;
+            b.classList.add("btn");
+            b.onclick = () => verificar(i, b);
+            boxOpciones.appendChild(b);
+        });
+    }
+
+    function verificar(sel, boton) {
+        const nom = document.getElementById("nombre").value.trim();
+        if(!nom) { alert("⚠️ Escribe tu nombre arriba antes de responder."); return; }
+        document.getElementById("nombre").disabled = true;
+
+        const p = preguntas[index];
+        const botones = document.querySelectorAll(".btn");
+        botones.forEach(btn => btn.disabled = true);
+
+        let res = "Incorrecto";
+        if(sel === p.c) {
+            boton.classList.add("correct");
+            nota += 2;
+            document.getElementById("puntos").innerText = nota;
+            document.getElementById("explicacion").style.background = "#e8f8f5";
+            res = "Correcto";
+        } else {
+            boton.classList.add("incorrect");
+            botones[p.c].classList.add("correct");
+            document.getElementById("explicacion").style.background = "#fdedec";
+        }
+
+        document.getElementById("explicacion").innerText = p.e;
+        document.getElementById("explicacion").style.display = "block";
+
+        historial.push(`Pregunta ${index+1}: ${res} (Marcó: ${p.o[sel]})`);
+
+        if(index < preguntas.length - 1) {
+            document.getElementById("btn-sig").style.display = "inline-block";
+        } else {
+            document.getElementById("btn-fin").style.display = "inline-block";
+        }
+    }
+
+    function siguiente() { index++; mostrar(); }
+
+    function finalizar() {
+        const nom = document.getElementById("nombre").value;
+        let txt = `Evaluacion de Enteros%0AAlumno: ${nom}%0ANota: ${nota} / 20 puntos.%0A%0ADetalle:%0A` + historial.join("%0A");
+        window.location.href = `mailto:tu_correo@://gmail.com Enteros - ${nom}&body=${txt}`;
+        alert("¡Terminado! Se abrirá tu correo para enviar los resultados.");
+    }
+
+    mostrar();
+</script>
+</body>
+</html>
